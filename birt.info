@@ -1,1 +1,8 @@
-name = BIRT
+; $Id$
+name = BIRT open source
+description = A custom page module that displays BIRT content using the PHP-Java Bridge.
+core = 7.x
+
+
+files[] = birt.module
+files[] = birt.install

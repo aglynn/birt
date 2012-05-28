@@ -1,0 +1,40 @@
+<?php
+/**
+ * @file
+ *
+ * This file installs our custom table.
+ */
+
+/**
+ * Implementation of hook_schema().
+ */
+function birt_schema() {
+  $schema['birt'] = array(
+    'fields' => array(
+      'vid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      'default' => 0, 
+      ),
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'reportname' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+        ), 
+    'primary key' => array('vid', 'nid'),
+    'unique keys' => array(
+      'birt_nid' => array('nid'),
+      ),
+      );
+
+  return $schema;
+}
