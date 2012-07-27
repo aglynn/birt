@@ -1,0 +1,96 @@
+<?php
+
+/**
+ * @file
+ * Module file for BIRT module.
+ *
+ * Way to upload BIRT reports to and display them in Drupal.
+ */
+
+/**
+ * Implements hook_menu().
+ *
+ * We are providing a default page to illustrate the use of our custom node view
+ * mode that will live at http://example.com/?q=examples/node_example
+ */
+
+
+/**
+ * 
+ * System settings form for BIRT.
+*/
+function birt_admin() {
+  $form = array();
+
+  $form['birt_server_address'] = array(
+      '#type' => 'textfield',
+      '#title' => t('BIRT Server Address'),
+      '#default_value' => variable_get('birt_server_address', ''),
+      '#size' => 30,
+      '#maxlength' => 100,
+      '#description' => t("Please type the URL of your BIRT server.") . ' For example, for http://127.0.0.1:8080/birt/ type in 127.0.0.1:8080/birt',
+      '#required' => TRUE,
+  );
+  $form['birt_enable_tagging'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Enable tagging of BIRT reports'),
+      '#default_value' => variable_get('birt_enable_tagging', 0),
+      '#description' => t("Check this box in order to have a vocabulary created for BIRT reports, a vocabulary that you can manage from the taxonomy administrative area and use as a selection for the BIRT report nodes. You can use this to organization your reports as well as to control access to reports, by using the taxonomy system."),
+      '#required' => FALSE,
+  );
+
+  return system_settings_form($form);
+}
+
+
+/**
+ * Implements hook_menu().
+ * Adds admin screen under settings.
+ */
+function birt_menu() {
+  $items = array();
+
+  $items['admin/config/birt'] = array(
+      'title' => 'BIRT settings',
+      'description' => 'Settings for integrating BIRT reports into your site',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('birt_admin'),
+      'access arguments' => array('Administer BIRT'),
+      'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_theme().
+ * Adding birt node template suggestion.
+ */
+function birt_theme($var) {
+  $item = $var['node'];
+  $item['path'] = drupal_get_path('module', 'birt') ."/theme";
+  $item['template'] = 'node--birt';
+  return array("node__birt" => $item);
+}
+
+
+/**
+ * Implementation of hook_preprocess_node().
+ * Adding CSS file
+ */
+function birt_preprocess_node(&$vars) {
+  if ($vars['node']->type == 'birt' && $vars['page']) {
+    drupal_add_css(drupal_get_path('module', 'birt') . '/theme/birt.css');
+    
+    
+    function file_realpath($uri) {
+      $scheme = file_uri_scheme($uri);
+      $wrapper = file_stream_wrapper_get_instance_by_scheme($scheme);
+      return $_SERVER['DOCUMENT_ROOT'] . '/' . $wrapper->getDirectoryPath() . '/' . file_uri_target($uri);
+    }
+  //  $report_path = file_realpath($vars['birt_reportfile'][0]['uri']);
+    $external_design = "http://birt1.local/sites/default/files/birt/files/" . $vars['birt_reportfile'][0]['filename'];
+    $report_url = variable_get('birt_server_address') . '/frameset?__report=' . $external_design;
+    $vars['report_url'] = $report_url;
+    
+  }
+}
