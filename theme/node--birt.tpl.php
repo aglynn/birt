@@ -96,7 +96,7 @@
   
 
   ?>
-<iframe src ="http://<?php print $report_url; ?>" width="100%" height="300">
+<iframe src ="http://<?php print $report_url; ?>" width="100%" height="<?php print $report_height ?>">
 <p>Report Should Appear Here</p>
 </iframe>
 

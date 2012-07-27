@@ -35,7 +35,7 @@ function birt_install() {
   // We define the node type as an associative array.
   $birt = array(
     'type' => 'birt',
-    'name' => $t('BIRT Report'),
+    'name' => $t('BI Report'),
     // 'base' tells Drupal the base string for hook functions.
     // This is often the module name; if base is set to 'mymodule', Drupal
     // would call mymodule_insert() or similar for node hooks.
@@ -153,7 +153,7 @@ function _birt_installed_fields() {
       'cardinality' => 1,
       'type'        => 'text',
       'settings'    => array(
-        'max_length' => 60,
+        'max_length' => 10,
       ),
     ),
     'birt_height' => array(
@@ -161,7 +161,7 @@ function _birt_installed_fields() {
       'cardinality' => 1,
       'type'        => 'text',
       'settings'    => array(
-        'max_length' => 60,
+        'max_length' => 10,
       ),
     ),
     'birt_reportfile' => array(
