@@ -92,10 +92,10 @@ function birt_preprocess_node(&$vars) {
     $vars['report_url'] = $report_url;
     
     if(!empty($vars['birt_height'])){
-      $vars['report_height'] = $vars['birt_height'];
+      $vars['report_height'] = $vars['birt_height'][0]['value'];
     }
     else{
-      $vars['report_height'] = '600px';
+      $vars['report_height'] = '800px';
     }
     
   }
