@@ -80,14 +80,8 @@ function birt_theme($var) {
 function birt_preprocess_node(&$vars) {
   if ($vars['node']->type == 'birt' && $vars['page']) {
     drupal_add_css(drupal_get_path('module', 'birt') . '/theme/birt.css');
-    
-    
-    function file_realpath($uri) {
-      $scheme = file_uri_scheme($uri);
-      $wrapper = file_stream_wrapper_get_instance_by_scheme($scheme);
-      return $_SERVER['DOCUMENT_ROOT'] . '/' . $wrapper->getDirectoryPath() . '/' . file_uri_target($uri);
-    }
-    $external_design = "http://birt1.local/sites/default/files/birt/files/" . $vars['birt_reportfile'][0]['filename'];
+      
+    $external_design = url("/sites/default/files/birt/files/", array('absolute' => TRUE)) . $vars['birt_reportfile'][0]['filename'];
     $report_url = variable_get('birt_server_address') . '/frameset?__report=' . $external_design;
     $vars['report_url'] = $report_url;
     
