@@ -76,18 +76,20 @@ function birt_preprocess_node(&$vars) {
     
     $file_path = 'private://birt/files/' . $vars['birt_reportfile'][0]['filename'];
 
-    // You can specify a subdirectory, e.g. public://foo/
-    file_unmanaged_copy($file_path, 'public://', FILE_EXISTS_REPLACE);
+
+    // Make the public birt file directory if not there already
+    $publicfolder = file_create_url("public://");
+    drupal_mkdir("public://birt", NULL, TRUE);
     
- //   variable_get('file_private_path', conf_path() . '/files') . '/' . $vars['birt_reportfile'][0]['filename'], 'public')
- //   file_copy($file, 'public');
-    $external_design = substr(url('/', array('absolute' => TRUE)), 0, -1) . variable_get('file_public_path', conf_path() . '/files') . '/' . $vars['birt_reportfile'][0]['filename'];
+    // Temporarily store a copy of the birt report in the public folder subdirectory
+    $birt_public_path = 'public://birt/';
+    file_unmanaged_copy($file_path, $birt_public_path, FILE_EXISTS_REPLACE);
     
+    // Format the URL for the BIRT server to read
+    $external_design = substr(url('/', array('absolute' => TRUE)), 0, -1) . variable_get('file_public_path', conf_path() . '/files') . '/birt/' . $vars['birt_reportfile'][0]['filename'];
     
-    
-    $publicfile_path = drupal_realpath('public://' . $vars['birt_reportfile'][0]['filename']);
-    variable_set('report_file_loc', $publicfile_path);
-    
+ //   $publicfile_path = drupal_realpath($birt_public_path . $vars['birt_reportfile'][0]['filename']);
+    variable_set('birt_public_folder', $birt_public_path);
     
     $report_url = variable_get('birt_server_address') . '/frameset?__report=' . $external_design;
     $vars['report_url'] = $report_url;
@@ -107,9 +109,9 @@ function birt_preprocess_node(&$vars) {
  * Wasn't able to put this anywhere immediately after page load because report wouldn't load
  */
 function birt_init() {
-  if(variable_get('report_file_loc') !== NULL) {    
-    $publicfile_path = variable_get('report_file_loc');
-    file_unmanaged_delete($publicfile_path);
-    variable_del('report_file_loc');
+  if(variable_get('birt_public_folder') !== NULL) {    
+    $birt_public_folder = variable_get('birt_public_folder');
+    file_unmanaged_delete_recursive($birt_public_folder);
+    variable_del('birt_public_folder');
   }
 }
