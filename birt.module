@@ -31,13 +31,6 @@ function birt_admin() {
       '#description' => t("Please type the URL of your BIRT server.") . ' For example, for http://127.0.0.1:8080/birt/ type in 127.0.0.1:8080/birt',
       '#required' => TRUE,
   );
-  $form['birt_enable_tagging'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Enable tagging of BIRT reports'),
-      '#default_value' => variable_get('birt_enable_tagging', 0),
-      '#description' => t("Check this box in order to have a vocabulary created for BIRT reports, a vocabulary that you can manage from the taxonomy administrative area and use as a selection for the BIRT report nodes. You can use this to organization your reports as well as to control access to reports, by using the taxonomy system."),
-      '#required' => FALSE,
-  );
 
   return system_settings_form($form);
 }
@@ -81,7 +74,7 @@ function birt_preprocess_node(&$vars) {
   if ($vars['node']->type == 'birt' && $vars['page']) {
     drupal_add_css(drupal_get_path('module', 'birt') . '/theme/birt.css');
       
-    $external_design = url("/sites/default/files/birt/files/", array('absolute' => TRUE)) . $vars['birt_reportfile'][0]['filename'];
+    $external_design = drupal_realpath(file_default_scheme() . '://') . '/' . $vars['birt_reportfile'][0]['filename'];
     $report_url = variable_get('birt_server_address') . '/frameset?__report=' . $external_design;
     $vars['report_url'] = $report_url;
     

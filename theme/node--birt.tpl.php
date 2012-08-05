@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Default theme implementation to display a node.
+ * BIRT node theme.
  *
  * Available variables:
  * - $title: the (sanitized) title of the node.
@@ -105,6 +105,9 @@
       // We hide the comments and links now so that we can render them later.
       hide($content['comments']);
       hide($content['links']);
+      unset($content['birt_height']);
+      unset($content['birt_width']);
+      unset($content['birt_reportfile']);
       print render($content);
     ?>
   </div>

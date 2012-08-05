@@ -44,7 +44,7 @@ function birt_install() {
     'base' => 'node_content',
     'description' => $t('This is where you upload and describe your BIRT report so that it can be used within this site.'),
     'title_label' => $t('Report Title'),
-	'custom' => TRUE,
+	  'custom' => TRUE,
   );
 
   // Complete the node type definition by setting any defaults not explicitly
@@ -54,8 +54,6 @@ function birt_install() {
 
   //We add a body field and set the body label immediately.
   node_add_body_field($content_type, $t('BIRT report description'));
-
-
 
   // Save the content type
   node_type_save($content_type);
@@ -82,6 +80,50 @@ function birt_install() {
     $instance['bundle'] = $birt['type'];
     field_create_instance($instance);
   }
+  
+  //Ensure the vocabulary doesn't exist already
+  $vocabularies = taxonomy_get_vocabularies();
+  if(!in_array('report_type', $vocabularies)){
+  
+    // Create the vocabulary.
+    taxonomy_vocabulary_save((object) array(
+        'name' => 'BI Report Types',
+        'machine_name' => 'report_type',
+    ));
+    
+    // Get the vocabulary ID.
+    $vid = db_query("SELECT vid FROM {taxonomy_vocabulary} WHERE machine_name = 'report_type'")->fetchField();
+    
+    // Define the terms.
+    $terms['Financial'][] = 'Balance Sheets';
+    $terms['Financial'][] = 'Expenditures';
+    $terms['Financial'][] = 'Sales';
+    $terms['Benchmarks'][] = 'Program Management';
+    $terms['Benchmarks'][] = 'Resource Management';
+    
+    foreach ($terms as $parent => $children) {
+    
+      // Create the parent term.
+      taxonomy_term_save((object) array(
+          'name' => $parent,
+          'vid' => $vid,
+      ));
+    
+      // Get the parent term's ID.
+      $tid = db_query("SELECT tid FROM {taxonomy_term_data} WHERE vid = :vid ORDER BY tid DESC LIMIT 1", array(
+          ':vid' => $vid,
+      ))->fetchField();
+    
+      foreach ($children as $term) {
+        // Create the child term.
+        taxonomy_term_save((object) array(
+            'name' => $term,
+            'vid' => $vid,
+            'parent' => array($tid),
+        ));
+      }
+    }
+  }  
 }
 /**
  * Implements hook_uninstall().
@@ -169,6 +211,21 @@ function _birt_installed_fields() {
       'type'       => 'file',
       'cardinality' => 1,
     ),
+    'birt_tag' => array(
+      'field_name' => 'birt_tag',
+      'label' => $t('BI Report Tag'),
+      'type' => 'taxonomy_term_reference',
+      'cardinality' => 1,
+      'settings' => array(
+          'allowed_values' => array(
+              array(
+                  'vocabulary' => 'report_type',
+                  'parent' => 0,
+              ),
+          ),
+          'uri_scheme' => 'private',
+      ),
+    ),
   );
 }
 
@@ -211,7 +268,6 @@ function _birt_installed_instances() {
         'type'    => 'text_textfield',
       ),
     ),
-    
     'birt_reportfile' => array(
     	'field_name' => 'birt_reportfile',
     	'type' => 'file',
@@ -220,10 +276,17 @@ function _birt_installed_instances() {
         'description_field' => 0,
         'file_directory' => 'birt/files',
         'file_extensions' => 'rptdesign',
-        'max_filesize' => '',
+        'max_filesize' => '50MB',
         'user_register_form' => FALSE,
       ), 
     ),
-    
+    'birt_tag' => array(
+        'field_name' => 'birt_tag',
+        'label' => $t('BI Report Tag'),
+        'type' => 'taxonomy_term_reference',
+        'widget' => array(
+            'type' => 'taxonomy_autocomplete',
+        ),
+    ),
   );
 }
