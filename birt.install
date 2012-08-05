@@ -82,9 +82,9 @@ function birt_install() {
   }
   
   //Ensure the vocabulary doesn't exist already
-  $vocabularies = taxonomy_get_vocabularies();
-  if(!in_array('report_type', $vocabularies)){
-  
+  $vocabularies = taxonomy_vocabulary_get_names();
+  if(!array_key_exists('report_type', $vocabularies)){
+   
     // Create the vocabulary.
     taxonomy_vocabulary_save((object) array(
         'name' => 'BI Report Types',
@@ -210,6 +210,9 @@ function _birt_installed_fields() {
       'field_name' => 'birt_reportfile',
       'type'       => 'file',
       'cardinality' => 1,
+      'settings' => array(
+        'uri_scheme' => 'private',
+      ),
     ),
     'birt_tag' => array(
       'field_name' => 'birt_tag',
@@ -223,7 +226,6 @@ function _birt_installed_fields() {
                   'parent' => 0,
               ),
           ),
-          'uri_scheme' => 'private',
       ),
     ),
   );

@@ -73,8 +73,22 @@ function birt_theme($var) {
 function birt_preprocess_node(&$vars) {
   if ($vars['node']->type == 'birt' && $vars['page']) {
     drupal_add_css(drupal_get_path('module', 'birt') . '/theme/birt.css');
-      
-    $external_design = drupal_realpath(file_default_scheme() . '://') . '/' . $vars['birt_reportfile'][0]['filename'];
+    
+    $file_path = 'private://birt/files/' . $vars['birt_reportfile'][0]['filename'];
+
+    // You can specify a subdirectory, e.g. public://foo/
+    file_unmanaged_copy($file_path, 'public://', FILE_EXISTS_REPLACE);
+    
+ //   variable_get('file_private_path', conf_path() . '/files') . '/' . $vars['birt_reportfile'][0]['filename'], 'public')
+ //   file_copy($file, 'public');
+    $external_design = substr(url('/', array('absolute' => TRUE)), 0, -1) . variable_get('file_public_path', conf_path() . '/files') . '/' . $vars['birt_reportfile'][0]['filename'];
+    
+    
+    
+    $publicfile_path = drupal_realpath('public://' . $vars['birt_reportfile'][0]['filename']);
+    variable_set('report_file_loc', $publicfile_path);
+    
+    
     $report_url = variable_get('birt_server_address') . '/frameset?__report=' . $external_design;
     $vars['report_url'] = $report_url;
     
@@ -84,6 +98,18 @@ function birt_preprocess_node(&$vars) {
     else{
       $vars['report_height'] = '800px';
     }
-    
+  }
+}
+
+/**
+ * Implementation of hook_init().
+ * Cleans up by deleting public report file and variable that was set
+ * Wasn't able to put this anywhere immediately after page load because report wouldn't load
+ */
+function birt_init() {
+  if(variable_get('report_file_loc') !== NULL) {    
+    $publicfile_path = variable_get('report_file_loc');
+    file_unmanaged_delete($publicfile_path);
+    variable_del('report_file_loc');
   }
 }
