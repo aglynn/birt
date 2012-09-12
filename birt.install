@@ -280,7 +280,7 @@ function _birt_installed_instances() {
         'file_extensions' => 'rptdesign',
         'max_filesize' => '50MB',
         'user_register_form' => FALSE,
-      ), 
+      ),
     ),
     'birt_tag' => array(
       'field_name' => 'birt_tag',
