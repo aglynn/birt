@@ -49,7 +49,7 @@ function birt_menu() {
 
 /**
  * Implementation of hook_theme().
- * Adding birt node template suggestion.
+ * Adding birt node theme template suggestion.
  */
 function birt_theme($var) {
  // $item = $var['node'];
