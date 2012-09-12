@@ -7,13 +7,6 @@
  * Way to upload BIRT reports to and display them in Drupal.
  */
 
-/**
- * Implements hook_menu().
- *
- * We are providing a default page to illustrate the use of our custom node view
- * mode that will live at http://example.com/?q=examples/node_example
- */
-
 
 /**
  * 

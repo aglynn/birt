@@ -1,3 +1,4 @@
-body.not-front.context-birt-node #zone-content, body.not-front.context-birt-node #zone-preface {
-    background: #FFFFFF;
+body.not-front.context-birt-node #zone-content, 
+body.not-front.context-birt-node #zone-preface {
+  background: #ffffff;
 }

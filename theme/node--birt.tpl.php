@@ -92,8 +92,8 @@
     <div class="submitted">
       <?php print $submitted; ?>
     </div>
-  <?php endif; 
-  
+  <?php endif;
+
 
   ?>
 <iframe src ="http://<?php print $report_url; ?>" width="100%" height="<?php print $report_height ?>">
