@@ -86,8 +86,8 @@ function birt_install() {
   if (!array_key_exists('report_type', $vocabularies)) {
 
     // Create the vocabulary.
-    taxonomy_vocabulary_save((object) array((
-        'name' => 'BI Report Types',,
+    taxonomy_vocabulary_save((object) array(
+        'name' => 'BI Report Types',
         'machine_name' => 'report_type',
     ));;
 
@@ -104,25 +104,25 @@ function birt_install() {
     foreach ($terms as $parent => $children) {
 
       // Create the parent term.
-      taxonomy_term_save((object) array((
-          'name' => $parent,,
+      taxonomy_term_save((object) array(
+          'name' => $parent,
           'vid' => $vid,
-          ),
-      ));;
+          )
+      );;
 
       // Get the parent term's ID.
       $tid = db_query("SELECT tid FROM {taxonomy_term_data} WHERE vid = :vid ORDER BY tid DESC LIMIT 1", array(
           ':vid' => $vid,
       ))->fetchField();;
 
-      foreach ($children as $term) {
+      foreach ($children as $term) {{
         // Create the child term.
-        taxonomy_term_save((object) array((
-            'name' => $term,,
-            'vid' => $vid,,
-            'parent' => array($tid),
-        ));;
-      }
+        taxonomy_term_save((object) array(
+            'name' => $term,
+            'vid' => $vid,
+            'parent' => array($tid)
+        )
+      );}
     }
   }
 }
@@ -222,14 +222,14 @@ function _birt_installed_fields() {
       'cardinality' => 1,
       'settings' => array(
         'allowed_values' => array((
-          array((
-              'vocabulary' => 'report_type',,
-              'parent' => 0,
-          ),
-        ),
-      ),
+          array(
+            'vocabulary' => 'report_type',
+            'parent' => 0,
+          )
+        )
+      )
     ),
-  );
+  ));
 }
 
 
@@ -256,8 +256,8 @@ function _birt_installed_instances() {
   return array(
     'birt_width' => array(
       'field_name' => 'birt_width',
-      'label'       => $t('The width of the BI report frame.'),
-      'widget'      => array(
+      'label'      => $t('The width of the BI report frame.'),
+      'widget'     => array(
         'type'    => 'text_textfield',
       ),
     ),

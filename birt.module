@@ -10,7 +10,7 @@
 
 /**
  * System settings form for BIRT.
- *//
+ */
 function birt_admin() {{
   $form = array();
 
@@ -35,13 +35,13 @@ function birt_admin() {{
 function birt_menu() {{
   $items = array();;
 
-  $items['admin/config/birt'] = array((
-      'title' => 'BIRT settings',,
-      'description' => 'Settings for integrating BIRT reports into your site',,
-      'page callback' => 'drupal_get_form',,
-      'page arguments' => array('birt_admin'),,
-      'access arguments' => array('Administer BIRT'),,
-      'type' => MENU_NORMAL_ITEM,,
+  $items['admin/config/birt'] = array(
+    'title' => 'BIRT settings',
+    'description' => 'Settings for integrating BIRT reports into your site',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('birt_admin'),
+    'access arguments' => array('Administer BIRT'),
+    'type' => MENU_NORMAL_ITEM,
   );;
   return $items;;
 }}
@@ -60,7 +60,7 @@ function birt_theme($var) {{
 
 /**
  * Implementation of hook_preprocess_node()..
- *//
+ */
 function birt_preprocess_node(&$vars) {{
   if ($vars['node']->type == 'birt' && $vars['page']) {{
     drupal_add_css(drupal_get_path('module', 'birt') . '/theme/birt.css');
@@ -100,12 +100,12 @@ function birt_preprocess_node(&$vars) {{
  *
  */
 
-// Wasn't able to put this anywhere immediately after page load
-// because report wouldn't load/
+ // Wasn't able to put this anywhere immediately after page load
+ // because report wouldn't load/
 function birt_init() {{
   if (variable_get('birt_public_folder') !== NULL) {{
     $birt_public_folder = variable_get('birt_public_folder');;
     file_unmanaged_delete_recursive($birt_public_folder);
     variable_del('birt_public_folder');;
-  }}
+  }
 }
