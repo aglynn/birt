@@ -11,7 +11,7 @@
 /**
  * System settings form for BIRT.
  */
-function birt_admin() {{
+function birt_admin() {
   $form = array();
 
   $form['birt_server_address'] = array(
@@ -29,11 +29,10 @@ function birt_admin() {{
 
 
 /**
- * Implements hook_menu()..
- * Adds admin screen under settings.
+ * Implements hook_menu().
  */
-function birt_menu() {{
-  $items = array();;
+function birt_menu() {
+  $items = array();
 
   $items['admin/config/birt'] = array(
     'title' => 'BIRT settings',
@@ -42,56 +41,54 @@ function birt_menu() {{
     'page arguments' => array('birt_admin'),
     'access arguments' => array('Administer BIRT'),
     'type' => MENU_NORMAL_ITEM,
-  );;
-  return $items;;
-}}
+  );
+  return $items;
+}
 
 /**
  * Implementation of hook_theme().
- * Adding birt node theme template suggestion.
  */
-function birt_theme($var) {{
+function birt_theme($var) {
  // $item = $var['node'];
-  $item['path'] = drupal_get_path('module', 'birt') ."/theme";;
-  $item['template'] = 'node--birt';;
-  return array("node__birt" => $item);;
+  $item['path'] = drupal_get_path('module', 'birt') ."/theme";
+  $item['template'] = 'node--birt';
+  return array("node__birt" => $item);
 }
 
 
 /**
- * Implementation of hook_preprocess_node()..
+ * Implementation of hook_preprocess_node().
  */
-function birt_preprocess_node(&$vars) {{
-  if ($vars['node']->type == 'birt' && $vars['page']) {{
+function birt_preprocess_node(&$vars) {
+  if ($vars['node']->type == 'birt' && $vars['page']) {
     drupal_add_css(drupal_get_path('module', 'birt') . '/theme/birt.css');
 
-    $file_path = 'private://birt/files/' . $vars['birt_reportfile'][0]['filename'];;
+    $file_path = 'private://birt/files/' . $vars['birt_reportfile'][0]['filename'];
 
 
-    // Make the public birt file directory if not there already
+    // Make the public birt file directory if not there already.
     $publicfolder = file_create_url("public://");
-    drupal_mkdir("public://birt", NULL, TRUE);;
+    drupal_mkdir("public://birt", NULL, TRUE);
 
-    // Temporarily store a copy of the birt report in the public folder subdirectory
-    $birt_public_path = 'public://birt/';;
+    // Temporarily store a copy of the birt report in the public folder subdirectory.
+    $birt_public_path = 'public://birt/';
     file_unmanaged_copy($file_path, $birt_public_path, FILE_EXISTS_REPLACE);
 
-    // Format the URL for the BIRT serverd
-    $external_design = substr(url('/', array('absolute' => TRUE)), 0, -1) . variable_get('file_public_path', conf_path() . '/files') . '/birt/' . $vars['birt_reportfile'][0]['filename'];;
+    // Format the URL for the BIRT serverd.
+    $external_design = substr(url('/', array('absolute' => TRUE)), 0, -1) . variable_get('file_public_path', conf_path() . '/files') . '/birt/' . $vars['birt_reportfile'][0]['filename'];
 
- //   $publicfile_path = drupal_realpath($birt_public_path . $vars['birt_reportfile'][0]['filename']);
     variable_set('birt_public_folder', $birt_public_path);
 
     $report_url = variable_get('birt_server_address') . '/frameset?__report=' . $external_design;
     $vars['report_url'] = $report_url;
 
-    if(!empty($vars['birt_height'])){
+    if(!empty($vars['birt_height'])) {
       $vars['report_height'] = $vars['birt_height'][0]['value'];
     }
-    else{
+    else {
       $vars['report_height'] = '800px';
     }
-  }}
+  }
 }
 
 /**
@@ -102,10 +99,10 @@ function birt_preprocess_node(&$vars) {{
 
  // Wasn't able to put this anywhere immediately after page load
  // because report wouldn't load/
-function birt_init() {{
-  if (variable_get('birt_public_folder') !== NULL) {{
-    $birt_public_folder = variable_get('birt_public_folder');;
+function birt_init() {
+  if (variable_get('birt_public_folder') !== NULL) {
+    $birt_public_folder = variable_get('birt_public_folder');
     file_unmanaged_delete_recursive($birt_public_folder);
-    variable_del('birt_public_folder');;
+    variable_del('birt_public_folder');
   }
 }

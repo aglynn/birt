@@ -95,11 +95,11 @@ function birt_install() {
     $vid = db_query("SELECT vid FROM {taxonomy_vocabulary} WHERE machine_name = 'report_type'")->fetchField();;
 
     // Define the terms.
-    $terms['Financial'][] = 'Balance Sheets';;
-    $terms['Financial'][] = 'Expenditures';;
-    $terms['Financial'][] = 'Sales';;
-    $terms['Benchmarks'][] = 'Program Management';;
-    $terms['Benchmarks'][] = 'Resource Management';;
+    $terms['Financial'][] = 'Balance Sheets';
+    $terms['Financial'][] = 'Expenditures';
+    $terms['Financial'][] = 'Sales';
+    $terms['Benchmarks'][] = 'Program Management';
+    $terms['Benchmarks'][] = 'Resource Management';
 
     foreach ($terms as $parent => $children) {
 
@@ -108,21 +108,21 @@ function birt_install() {
           'name' => $parent,
           'vid' => $vid,
           )
-      );;
+      );
 
       // Get the parent term's ID.
       $tid = db_query("SELECT tid FROM {taxonomy_term_data} WHERE vid = :vid ORDER BY tid DESC LIMIT 1", array(
           ':vid' => $vid,
-      ))->fetchField();;
+      ))->fetchField();
 
-      foreach ($children as $term) {{
+      foreach ($children as $term) {
         // Create the child term.
         taxonomy_term_save((object) array(
             'name' => $term,
             'vid' => $vid,
             'parent' => array($tid)
-        )
-      );}
+        ));
+      }
     }
   }
 }
@@ -221,15 +221,15 @@ function _birt_installed_fields() {
       'type' => 'taxonomy_term_reference',
       'cardinality' => 1,
       'settings' => array(
-        'allowed_values' => array((
+        'allowed_values' => array(
           array(
             'vocabulary' => 'report_type',
             'parent' => 0,
-          )
-        )
-      )
+          ),
+        ),
+      ),
     ),
-  ));
+  );
 }
 
 
