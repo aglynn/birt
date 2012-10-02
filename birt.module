@@ -15,13 +15,13 @@ function birt_admin() {
   $form = array();
 
   $form['birt_server_address'] = array(
-      '#type' => 'textfield',
-      '#title' => t('BIRT Server Address'),
-      '#default_value' => variable_get('birt_server_address', ''),
-      '#size' => 30,
-      '#maxlength' => 100,
-      '#description' => t("Please type the URL of your BIRT server.") . ' For example, for http://127.0.0.1:8080/birt/ type in 127.0.0.1:8080/birt',
-      '#required' => TRUE,
+    '#type' => 'textfield',
+    '#title' => t('BIRT Server Address'),
+    '#default_value' => variable_get('birt_server_address', ''),
+    '#size' => 30,
+    '#maxlength' => 100,
+    '#description' => t("Please type the URL of your BIRT server.") . ' For example, for http://127.0.0.1:8080/birt/ type in 127.0.0.1:8080/birt',
+    '#required' => TRUE,
   );
 
   return system_settings_form($form);
@@ -46,18 +46,18 @@ function birt_menu() {
 }
 
 /**
- * Implementation of hook_theme().
+ * Implements hook_theme().
  */
 function birt_theme($var) {
- // $item = $var['node'];
-  $item['path'] = drupal_get_path('module', 'birt') ."/theme";
+  // $item = $var['node'];
+  $item['path'] = drupal_get_path('module', 'birt') . "/theme";
   $item['template'] = 'node--birt';
   return array("node__birt" => $item);
 }
 
 
 /**
- * Implementation of hook_preprocess_node().
+ * Implements hook_preprocess_node().
  */
 function birt_preprocess_node(&$vars) {
   if ($vars['node']->type == 'birt' && $vars['page']) {
@@ -70,7 +70,7 @@ function birt_preprocess_node(&$vars) {
     $publicfolder = file_create_url("public://");
     drupal_mkdir("public://birt", NULL, TRUE);
 
-    // Temporarily store a copy of the birt report in the public folder subdirectory.
+    // Temporarily store a copy of the birt report in the public folder subdir.
     $birt_public_path = 'public://birt/';
     file_unmanaged_copy($file_path, $birt_public_path, FILE_EXISTS_REPLACE);
 
@@ -82,7 +82,7 @@ function birt_preprocess_node(&$vars) {
     $report_url = variable_get('birt_server_address') . '/frameset?__report=' . $external_design;
     $vars['report_url'] = $report_url;
 
-    if(!empty($vars['birt_height'])) {
+    if (!empty($vars['birt_height'])) {
       $vars['report_height'] = $vars['birt_height'][0]['value'];
     }
     else {
@@ -94,12 +94,11 @@ function birt_preprocess_node(&$vars) {
 /**
  * Implementation of hook_init();.
  * Cleans up by deleting public report file and variable that was set.d
- *
  */
 
- // Wasn't able to put this anywhere immediately after page load
- // because report wouldn't load/
 function birt_init() {
+  // Wasn't able to put this anywhere immediately after page load...
+  // because report wouldn't load.
   if (variable_get('birt_public_folder') !== NULL) {
     $birt_public_folder = variable_get('birt_public_folder');
     file_unmanaged_delete_recursive($birt_public_folder);

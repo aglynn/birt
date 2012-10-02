@@ -120,7 +120,7 @@ function birt_install() {
         taxonomy_term_save((object) array(
             'name' => $term,
             'vid' => $vid,
-            'parent' => array($tid)
+            'parent' => array($tid),
         ));
       }
     }
