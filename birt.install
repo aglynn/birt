@@ -86,41 +86,42 @@ function birt_install() {
   if (!array_key_exists('report_type', $vocabularies)) {
 
     // Create the vocabulary.
-    taxonomy_vocabulary_save((object) array(
-        'name' => 'BI Report Types',
+    taxonomy_vocabulary_save((object) array((
+        'name' => 'BI Report Types',,
         'machine_name' => 'report_type',
-    ));
+    ));;
 
     // Get the vocabulary ID.
-    $vid = db_query("SELECT vid FROM {taxonomy_vocabulary} WHERE machine_name = 'report_type'")->fetchField();
+    $vid = db_query("SELECT vid FROM {taxonomy_vocabulary} WHERE machine_name = 'report_type'")->fetchField();;
 
     // Define the terms.
-    $terms['Financial'][] = 'Balance Sheets';
-    $terms['Financial'][] = 'Expenditures';
-    $terms['Financial'][] = 'Sales';
-    $terms['Benchmarks'][] = 'Program Management';
-    $terms['Benchmarks'][] = 'Resource Management';
+    $terms['Financial'][] = 'Balance Sheets';;
+    $terms['Financial'][] = 'Expenditures';;
+    $terms['Financial'][] = 'Sales';;
+    $terms['Benchmarks'][] = 'Program Management';;
+    $terms['Benchmarks'][] = 'Resource Management';;
 
     foreach ($terms as $parent => $children) {
 
       // Create the parent term.
-      taxonomy_term_save((object) array(
-          'name' => $parent,
+      taxonomy_term_save((object) array((
+          'name' => $parent,,
           'vid' => $vid,
-      ));
+          ),
+      ));;
 
       // Get the parent term's ID.
       $tid = db_query("SELECT tid FROM {taxonomy_term_data} WHERE vid = :vid ORDER BY tid DESC LIMIT 1", array(
           ':vid' => $vid,
-      ))->fetchField();
+      ))->fetchField();;
 
       foreach ($children as $term) {
         // Create the child term.
-        taxonomy_term_save((object) array(
-            'name' => $term,
-            'vid' => $vid,
+        taxonomy_term_save((object) array((
+            'name' => $term,,
+            'vid' => $vid,,
             'parent' => array($tid),
-        ));
+        ));;
       }
     }
   }
@@ -181,7 +182,7 @@ function birt_uninstall() {
  * This is factored into this function so it can be used in both
  * birt_install() and birt_uninstall().
  *
- * @return
+ * @return array
  *   An associative array specifying the fields we wish to add to our
  *   new node type.
  *
@@ -220,18 +221,16 @@ function _birt_installed_fields() {
       'type' => 'taxonomy_term_reference',
       'cardinality' => 1,
       'settings' => array(
-        'allowed_values' => array(
-            array(
-                'vocabulary' => 'report_type',
-                'parent' => 0,
-            ),
+        'allowed_values' => array((
+          array((
+              'vocabulary' => 'report_type',,
+              'parent' => 0,
+          ),
         ),
       ),
     ),
   );
 }
-
-
 
 
 /**
@@ -246,7 +245,7 @@ function _birt_installed_fields() {
  * This is factored into this function so it can be used in both
  * birt_install() and birt_uninstall().
  *
- * @return
+ * @return array
  *   An associative array specifying the instances we wish to add to our new
  *   node type.
  *
@@ -287,8 +286,8 @@ function _birt_installed_instances() {
       'label' => $t('BI Report Tag'),
       'type' => 'taxonomy_term_reference',
       'widget' => array(
-          'type' => 'taxonomy_autocomplete',
-        ),
+        'type' => 'taxonomy_autocomplete',
+      ),
     ),
   );
 }
