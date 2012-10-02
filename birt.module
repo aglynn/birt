@@ -92,13 +92,12 @@ function birt_preprocess_node(&$vars) {
 }
 
 /**
- * Implementation of hook_init();.
- * Cleans up by deleting public report file and variable that was set.d
+ * Implements hook_init().
  */
-
 function birt_init() {
-  // Wasn't able to put this anywhere immediately after page load...
-  // because report wouldn't load.
+  // Cleans up by deleting public report file and variable that was set.
+  // Wasn't able to put this anywhere immediately after page load.
+  // Because report wouldn't load.
   if (variable_get('birt_public_folder') !== NULL) {
     $birt_public_folder = variable_get('birt_public_folder');
     file_unmanaged_delete_recursive($birt_public_folder);
