@@ -3,7 +3,6 @@
 /**
  * @file
  * Our BIRT Open Source node type will allow users to specify a "reportname"
- *
  */
 
 
@@ -14,13 +13,13 @@ function birt_admin() {
   $form = array();
 
   $form['birt_server_address'] = array(
-      '#type' => 'textfield',
-      '#title' => t('BIRT Server Address'),
-      '#default_value' => variable_get('birt_server_address', ''),
-      '#size' => 30,
-      '#maxlength' => 100,
-      '#description' => t("Please type the URL of your BIRT server.") . ' For example, for http://127.0.0.1:8080/birt/ type in 127.0.0.1:8080/birt',
-      '#required' => TRUE,
+    '#type' => 'textfield',
+    '#title' => t('BIRT Server Address'),
+    '#default_value' => variable_get('birt_server_address', ''),
+    '#size' => 30,
+    '#maxlength' => 100,
+    '#description' => t("Please type the URL of your BIRT server.") . ' For example, for http://127.0.0.1:8080/birt/ type in 127.0.0.1:8080/birt',
+    '#required' => TRUE,
   );
 
   $form['javabridge_directory_address'] = array(
@@ -158,3 +157,4 @@ function birt_init() {
     variable_del('birtgraphics_public_folder');
   }
 }
+
