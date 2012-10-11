@@ -2,20 +2,8 @@
 
 /**
  * @file
- *
  * Our BIRT Open Source node type will allow users to specify a "reportname"
- * for their nodes. To store this extra information, we need an auxiliary database table.
  *
- * Database definition:
- * @code
- *   CREATE TABLE birt (
- *     vid int(10) unsigned NOT NULL default '0',
- *     nid int(10) unsigned NOT NULL default '0',
- *     reportname varchar(255) NOT NULL default '',
- *     PRIMARY KEY (vid, nid),
- *     KEY `birt_nid` (nid)
- *   )
- * @endcode
  */
 
 
@@ -36,13 +24,13 @@ function birt_admin() {
   );
 
   $form['javabridge_directory_address'] = array(
-      '#type' => 'textfield',
-      '#title' => t('JavaBridge Directory Address'),
-      '#default_value' => variable_get('javabridge_directory_address', ''),
-      '#size' => 30,
-      '#maxlength' => 100,
-      '#description' => t("Please type the URL of your JavaBridge directory.") . ' For example, for http://127.0.0.1:8080/JavaBridge/ type in 127.0.0.1:8080/JavaBridge',
-      '#required' => TRUE,
+    '#type' => 'textfield',
+    '#title' => t('JavaBridge Directory Address'),
+    '#default_value' => variable_get('javabridge_directory_address', ''),
+    '#size' => 30,
+    '#maxlength' => 100,
+    '#description' => t("Please type the URL of your JavaBridge directory.") . ' For example, for http://127.0.0.1:8080/JavaBridge/ type in 127.0.0.1:8080/JavaBridge',
+    '#required' => TRUE,
   );
 
   return system_settings_form($form);
@@ -56,12 +44,12 @@ function birt_menu() {
   $items = array();
 
   $items['admin/config/birt'] = array(
-      'title' => 'BIRT settings',
-      'description' => 'Settings for integrating BIRT reports into your site',
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('birt_admin'),
-      'access arguments' => array('Administer BIRT'),
-      'type' => MENU_NORMAL_ITEM,
+    'title' => 'BIRT settings',
+    'description' => 'Settings for integrating BIRT reports into your site',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('birt_admin'),
+    'access arguments' => array('Administer BIRT'),
+    'type' => MENU_NORMAL_ITEM,
   );
   return $items;
 }
@@ -81,8 +69,8 @@ function birt_theme($var) {
  */
 function birt_preprocess_node(&$vars) {
   if ($vars['type'] == 'birt' && $vars['page'] == TRUE) {
-    if(file_exists(variable_get('javabridge_directory_address') . "/java/Java.inc")){
-      include_once("http://" . variable_get('javabridge_directory_address') . "/java/Java.inc");
+    if (file_exists(variable_get('javabridge_directory_address') . "/java/Java.inc")) {
+      include_once "http://" . variable_get('javabridge_directory_address') . "/java/Java.inc";
       drupal_add_css(drupal_get_path('module', 'birt') . '/theme/birt.css');
 
       $file_path = 'private://birt/files/' . $vars['birt_reportfile'][0]['filename'];
@@ -108,47 +96,45 @@ function birt_preprocess_node(&$vars) {
       variable_set('birt_public_folder', $birt_public_path);
 
       // JavaBridge code starts here.
-
-      $imageURLPrefix = substr(url('/', array('absolute' => TRUE)), 0, -1) . variable_get('file_public_path', conf_path() . '/files') . '/birtgraphics/';
+      $image_url_prefix = substr(url('/', array('absolute' => TRUE)), 0, -1) . variable_get('file_public_path', conf_path() . '/files') . '/birtgraphics/';
 
       $birtgraphics_path = variable_get('file_public_path', conf_path() . '/files') . '/birtgraphics/';
 
       $here = getcwd();
 
       $ctx = java_context()->getServletContext();
-      $birtReportEngine = java("org.eclipse.birt.php.birtengine.BirtEngine")->getBirtEngine($ctx);
+      $birt_report_engine = java("org.eclipse.birt.php.birtengine.BirtEngine")->getBirtEngine($ctx);
       java_context()->onShutdown(java("org.eclipse.birt.php.birtengine.BirtEngine")->getShutdownHook());
 
-      try{
+      try {
         // Pass the .rptdesign file to the JavaBridge to be interpreted by BIRT.
+        $report = $birt_report_engine->openReportDesign($external_design);
+        $task = $birt_report_engine->createRunAndRenderTask($report);
 
-        $report = $birtReportEngine->openReportDesign($external_design);
-        $task = $birtReportEngine->createRunAndRenderTask($report);
-
-        $taskOptions = new java("org.eclipse.birt.report.engine.api.HTMLRenderOption");
+        $task_options = new java("org.eclipse.birt.report.engine.api.HTMLRenderOption");
         $outputStream = new java("java.io.ByteArrayOutputStream");
-        $taskOptions->setOutputStream($outputStream);
-        $taskOptions->setOutputFormat("html");
+        $task_options->setOutputStream($outputStream);
+        $task_options->setOutputFormat("html");
         $ih = new java( "org.eclipse.birt.report.engine.api.HTMLServerImageHandler");
-        $taskOptions->setImageHandler($ih);
+        $task_options->setImageHandler($ih);
 
-        $taskOptions->setBaseImageURL($imageURLPrefix . session_id());
-        $taskOptions->setImageDirectory($birtgraphics_path . session_id());
+        $task_options->setBaseImageURL($image_url_prefix . session_id());
+        $task_options->setImageDirectory($birtgraphics_path . session_id());
 
-        $task->setRenderOption( $taskOptions );
+        $task->setRenderOption($task_options);
         $task->run();
         $task->close();
 
       } catch (JavaException $e) {
-        echo $e; //"Error Calling BIRT";
+        echo $e;
       }
 
-      // Return the generated output to the client
+      // Return the generated output to the client.
       $report = java_values($outputStream);
 
       $vars['report'] == $report;
     }
-    else{
+    else {
       $error = "no_javainfo";
     }
   }
@@ -161,11 +147,11 @@ function birt_init() {
   // Cleans up by deleting public report file and variable that was set.
   // Wasn't able to put this anywhere immediately after page load.
   // Because report wouldn't load.
- // if (variable_get('birt_public_folder') !== NULL) {
- //   $birt_public_folder = variable_get('birt_public_folder');
- //   file_unmanaged_delete_recursive($birt_public_folder);
- //   variable_del('birt_public_folder');
- // }
+  if (variable_get('birt_public_folder') !== NULL) {
+    $birt_public_folder = variable_get('birt_public_folder');
+    file_unmanaged_delete_recursive($birt_public_folder);
+    variable_del('birt_public_folder');
+  }
   if (variable_get('birtgraphics_public_folder') !== NULL) {
     $birtgraphics_public_folder = variable_get('birtgraphics_public_folder');
     file_unmanaged_delete_recursive($birtgraphics_public_folder);
