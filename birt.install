@@ -81,18 +81,18 @@ function birt_install() {
     field_create_instance($instance);
   }
 
+  $taxonomy_loaded = taxonomy_vocabulary_machine_name_load('report_type');
   // Ensure the vocabulary doesn't exist already.
-  $vocabularies = taxonomy_vocabulary_get_names();
-  if (!array_key_exists('report_type', $vocabularies)) {
+  if ($taxonomy_loaded != NULL) {
 
     // Create the vocabulary.
     taxonomy_vocabulary_save((object) array(
         'name' => 'BI Report Types',
         'machine_name' => 'report_type',
-    ));;
+    ));
 
     // Get the vocabulary ID.
-    $vid = db_query("SELECT vid FROM {taxonomy_vocabulary} WHERE machine_name = 'report_type'")->fetchField();;
+    $vid = $taxonomy_loaded->vid;
 
     // Define the terms.
     $terms['Financial'][] = 'Balance Sheets';
@@ -110,10 +110,15 @@ function birt_install() {
           )
       );
 
-      // Get the parent term's ID.
-      $tid = db_query("SELECT tid FROM {taxonomy_term_data} WHERE vid = :vid ORDER BY tid DESC LIMIT 1", array(
-          ':vid' => $vid,
-      ))->fetchField();
+      // Get all the term ids.
+      $tid = taxonomy_get_tree($vid);
+      $tids = array();
+      foreach ($tid as $tax_object) {
+        $tids[] = get_class($tax_object);
+      }
+
+      // Get the highest term id, because that is the parent.
+      $tid = max($tids);
 
       foreach ($children as $term) {
         // Create the child term.

@@ -81,7 +81,6 @@ function birt_theme($var) {
  */
 function birt_preprocess_node(&$vars) {
   if ($vars['type'] == 'birt' && $vars['page'] == TRUE) {
-    dpm(variable_get('javabridge_directory_address') . "/java/Java.inc");
     if(file_exists(variable_get('javabridge_directory_address') . "/java/Java.inc")){
       include_once("http://" . variable_get('javabridge_directory_address') . "/java/Java.inc");
       drupal_add_css(drupal_get_path('module', 'birt') . '/theme/birt.css');
@@ -121,7 +120,7 @@ function birt_preprocess_node(&$vars) {
       java_context()->onShutdown(java("org.eclipse.birt.php.birtengine.BirtEngine")->getShutdownHook());
 
       try{
-        // Pass the .rptdesign file to the JavaBridge to be interpreted by BIRT
+        // Pass the .rptdesign file to the JavaBridge to be interpreted by BIRT.
 
         $report = $birtReportEngine->openReportDesign($external_design);
         $task = $birtReportEngine->createRunAndRenderTask($report);
