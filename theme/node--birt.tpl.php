@@ -90,20 +90,17 @@
     <a href="<?php print $node_url; ?>;"><?php print $title; ?> </a>
   </h2>
   <?php endif; ?>
-  <?php print render($title_suffix); ?>
+
+  <?php print render($title_suffix);
+  dpm(variable_get('birt_javabridge_settings_file'));
+  echo file_get_contents('sites/default/files/private/birt/files/Java.inc');
+   ?>
 
   <?php if ($display_submitted): ?>
   <div class="submitted">
     <?php print $submitted; ?>
   </div>
-  <?php endif;
-
-
-  ?>
-  <iframe src="http://<?php print $report_url; ?>;" width="100%"
-    height="<?php print $report_height ?>;">
-    <p>Report Should Appear Here</p>
-  </iframe>
+  <?php endif; ?>
 
   <div class="content" <?php print $content_attributes; ?>>
     <?php
@@ -116,6 +113,19 @@
     print render($content);
     ?>
   </div>
+
+  <?php if ($report): ?>
+  <div class="birt_report">
+    <?php print $report; ?>
+  </div>
+  <?php endif; ?>
+
+  <?php if ($report_url): ?>
+    <iframe src="http://<?php print $report_url; ?>" width="100%"
+    height="<?php print $report_height ?>;">
+    <p><?php echo t('Report Should Appear Here'); ?></p>
+  </iframe>
+  <?php endif; ?>
 
   <?php print render($content['links']); ?>
 

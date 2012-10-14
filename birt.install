@@ -83,7 +83,7 @@ function birt_install() {
 
   $taxonomy_loaded = taxonomy_vocabulary_machine_name_load('report_type');
   // Ensure the vocabulary doesn't exist already.
-  if ($taxonomy_loaded != NULL) {
+  if ($taxonomy_loaded == NULL) {
 
     // Create the vocabulary.
     taxonomy_vocabulary_save((object) array(
@@ -179,6 +179,18 @@ function birt_uninstall() {
   // Purge all field information
   // http://api.drupal.org/api/function/field_purge_batch/7
   field_purge_batch(1000);
+
+  if (variable_get('birt_render_method')) {
+    variable_del('birt_render_method');
+  }
+
+  if (variable_get('birt_server_address')) {
+    variable_del('birt_server_address');
+  }
+
+  if (variable_get('javabridge_directory_address')) {
+    variable_del('javabridge_directory_address');
+  }
 }
 
 /**
@@ -217,7 +229,7 @@ function _birt_installed_fields() {
       'type'       => 'file',
       'cardinality' => 1,
       'settings' => array(
-        'uri_scheme' => 'private',
+        'uri_scheme' => 'public',
       ),
     ),
     'birt_tag' => array(
