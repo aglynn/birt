@@ -91,10 +91,7 @@
   </h2>
   <?php endif; ?>
 
-  <?php print render($title_suffix);
-  dpm(variable_get('birt_javabridge_settings_file'));
-  echo file_get_contents('sites/default/files/private/birt/files/Java.inc');
-   ?>
+  <?php print render($title_suffix); ?>
 
   <?php if ($display_submitted): ?>
   <div class="submitted">

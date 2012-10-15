@@ -118,75 +118,87 @@ function birt_preprocess_node(&$vars) {
     $vars['fileloc'] = $fileloc;
     $external_design = substr(url('/', array('absolute' => TRUE)), 0, -1) . variable_get('file_public_path', conf_path() . '/files') . '/birt/files/' . $vars['birt_reportfile'][0]['filename'];
 
-    if (variable_get('birt_render_method') == 'birt_api'){
+    $report_url = '';
+    $report = '';
+    $birt_render_method = variable_get('birt_render_method');
+
+    if ($birt_render_method == 'birt_api'){
       if (variable_get('birt_javabridge_settings_file')) {
-        include_once $javabridge_file;
         $vars['javabridge_file'] = $javabridge_file;
         drupal_add_css(drupal_get_path('module', 'birt') . '/theme/birt.css');
 
-        $file_path = 'private://birt/files/' . $vars['birt_reportfile'][0]['filename'];
 
-        // Create the birtgraphics directory in the public folder.
-    //    drupal_mkdir("public://birtgraphics", NULL, TRUE);
-
-    //    $birtgraphics_public_path = 'public://birtgraphics/';
-    //    file_unmanaged_copy($file_path, $birtgraphics_public_path, FILE_EXISTS_REPLACE);
-    //    variable_set('birtgraphics_public_folder', $birtgraphics_public_path);
+        // Call the Java.inc file that was uploaded in the BIRT module admin page.
+        $my_java_inc = "private://birt/files/Java.inc";
+        $java_inc_filepath = file_build_uri($myreport);
+        include_once($java_inc_filepath);
 
 
+        /**
+         * This example demonstrates how to use a complex library such as
+         * Eclipse BIRT. This library starts a number of threads, which must
+         * be terminated before the library is unloaded. This is usually done
+         * in the servlet's destroy() method or in the destroy() method of
+         * an associated ServletContextListener.
+         *
+         * To allow startup and shutdown of such libraries, the PHP/Java
+         * Bridge provides two convenience procedures, which allow one to run
+         * a synchronized init() and to register a close() hook with the
+         * servlet or the VM. Please see the API documentation of
+         * java_context()->init() and java_context()->onShutdown() for
+         * details.
+         *
+         * To use this sample, copy "report.php", "test.rptdesign" (and
+         * "Java.inc", if needed) to some directory, start the Java back- end
+         * (tomcat, or any other J2EE server) and type:
+         *
+         * php report.php >helloBirt.html
+         *
+         */
 
-        // Format the URL for the BIRT server.
-        $external_design = substr(url('/', array('absolute' => TRUE)), 0, -1);
-        $external_design .= variable_get('file_public_path', conf_path() . '/files');
-        $external_design .= '/birt/' . $vars['birt_reportfile'][0]['filename'];
-        $vars['external_design'] = $external_design;
-        variable_set('birt_public_folder', $birt_public_path);
+        // the report file to render
+        $myReport = "public://birt/files/" . $vars['birt_reportfile'][0]['filename'];
+        $report_filepath = file_build_uri($myreport);
 
-        // JavaBridge code starts here.
-        $image_url_prefix = substr(url('/', array('absolute' => TRUE)), 0, -1) . variable_get('file_public_path', conf_path() . '/files') . '/birtgraphics/';
+        // load resources, .rpt files and images from the current working dir
+        $here = getcwd();
 
-        $birtgraphics_path = variable_get('file_public_path', conf_path() . '/files') . '/birtgraphics/';
-
-        include_once 'public://birt/files/java.inc';
+        $ctx = java_context()->getServletContext();
+        $birtReportEngine =        java("org.eclipse.birt.php.birtengine.BirtEngine")->getBirtEngine($ctx);
+        java_context()->onShutdown(java("org.eclipse.birt.php.birtengine.BirtEngine")->getShutdownHook());
 
 
-        try {
+        // Create a HTML render context
+        $renderContext = new java ("org.eclipse.birt.report.engine.api.HTMLRenderContext");
+        $renderContext->setBaseImageURL("$here/sites/default/files/birt/files");
+        $contextMap = new java("java.util.HashMap");
+        $CONTEXT = java("org.eclipse.birt.report.engine.api.EngineConstants")->APPCONTEXT_HTML_RENDER_CONTEXT;
+        $contextMap->put($CONTEXT, $renderContext );
 
-          $ctx = java_context()->getServletContext();
-          $birt_report_engine = java("org.eclipse.birt.php.birtengine.BirtEngine")->getBirtEngine($ctx);
-          java_context()->onShutdown(java("org.eclipse.birt.php.birtengine.BirtEngine")->getShutdownHook());
 
-          // Pass the .rptdesign file to the JavaBridge to be interpreted by BIRT.
-          $report = $birt_report_engine->openReportDesign($external_design);
-          $task = $birt_report_engine->createRunAndRenderTask($report);
+        // Load the report design
+        $design = $birtReportEngine->openReportDesign("${report_filepath}");
+        $task = $birtReportEngine->createRunAndRenderTask( $design );
+        $task->setAppContext( $contextMap );
 
-          $task_options = new java("org.eclipse.birt.report.engine.api.HTMLRenderOption");
-          $output_stream = new java("java.io.ByteArrayOutputStream");
-          $task_options->setOutputStream($output_stream);
-          $task_options->setOutputFormat("html");
-          $ih = new java("org.eclipse.birt.report.engine.api.HTMLServerImageHandler");
-          $task_options->setImageHandler($ih);
+        // Add HTML render options
+        $options = new java("org.eclipse.birt.report.engine.api.HTMLRenderOption");
+        $options->setOutputFormat($options->OUTPUT_FORMAT_HTML);
 
-          $task_options->setBaseImageURL($image_url_prefix . session_id());
-          $task_options->setImageDirectory($birtgraphics_path . session_id());
+        // Create the output
+        $out = new java("java.io.ByteArrayOutputStream");
+        $options->setOutputStream($out);
+        $task->setRenderOption($options);
+        $task->run();
+        $task->close();
 
-          $task->setRenderOption($task_options);
-          $task->run();
-          $task->close();
-
-        } catch (JavaException $e) {
-          watchdog('BIRT', $e);
-        }
-
-        // Return the generated output to the client.
-        $report .= java_values($output_stream);
-
-        $vars['report'] = $report;
+        // Return the generated output to the client
+        $vars['report'] = java_values($out);;
       }
     }
 
     // If using an iframe, set up iframe link and size of iframe.
-    if (variable_get('birt_render_method') == 'iframe'){
+    if ($birt_render_method == 'iframe'){
       $report_url = variable_get('birt_server_address') . '/frameset?__report=' . $external_design;
       $vars['report_url'] = $report_url;
 
