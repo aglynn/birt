@@ -174,7 +174,11 @@ function birt_preprocess_node(&$vars) {
       $task->close();
 
       // Return the generated output to the client
-      $report = java_values($out);
+      $report_html = java_values($out);
+
+      // Fix the broken images. Escape the text for the public path and absolute path
+
+      $report = str_replace("file:". $here, '', $report_html);
     }
 
     // If using an iframe, set up iframe link and size of iframe.
