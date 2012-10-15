@@ -51,17 +51,16 @@ function birt_admin() {
   );
 
   $form['birt_javabridge_settings_file'] = array(
-    '#title' => 'Upload',
+    '#states' => array(
+      // Only show this field when the checkbox is enabled.
+      'visible' => array(
+        ':input[name="birt_render_method"]' => array('value' => 'birt_api'),
+      ),
+    ),
     '#title' => t('JavaBridge Settings File'),
     '#description' => t('Please upload the Java.inc file located within the JavaBridge/java/ directory.'),
     '#type' => 'file',
     '#default_value' => variable_get('birt_javabridge_settings_file', ''),
-    '#states' => array(
-      // Only show this field when the checkbox is enabled.
-      'visible' => array(
-          ':input[name="birt_render_method"]' => array('value' => 'birt_api'),
-      ),
-    ),
   );
 
   return system_settings_form($form);
@@ -114,107 +113,91 @@ function birt_theme($var) {
 function birt_preprocess_node(&$vars) {
 
   if ($vars['type'] == 'birt' && $vars['page'] == TRUE) {
-    $fileloc = 'private://birt/files/' . $vars['birt_reportfile'][0]['filename'];
-    $vars['fileloc'] = $fileloc;
-    $external_design = substr(url('/', array('absolute' => TRUE)), 0, -1) . variable_get('file_public_path', conf_path() . '/files') . '/birt/files/' . $vars['birt_reportfile'][0]['filename'];
 
     $report_url = '';
     $report = '';
+    $report_width = '';
+    $report_height = '';
+
+    $external_design = substr(url('/', array('absolute' => TRUE)), 0, -1) . variable_get('file_public_path', conf_path() . '/files') . '/birt/files/' . $vars['birt_reportfile'][0]['filename'];
     $birt_render_method = variable_get('birt_render_method');
+    $vars['birt_render_method'] = $birt_render_method;
 
     if ($birt_render_method == 'birt_api'){
-      if (variable_get('birt_javabridge_settings_file')) {
-        $vars['javabridge_file'] = $javabridge_file;
-        drupal_add_css(drupal_get_path('module', 'birt') . '/theme/birt.css');
+      drupal_add_css(drupal_get_path('module', 'birt') . '/theme/birt.css');
+
+      $here = getcwd();
+
+      // Call the Java.inc file that was uploaded in the BIRT module admin page.
+      $java_inc_filepath = $here . '/' . variable_get('file_private_path', conf_path() . '/files') . '/Java.inc';
+
+      $report_images_path = $here . '/' . variable_get('file_public_path', conf_path() . '/files') . '/birt/images/';
+      $report_images_external = url('/', array('absolute' => TRUE)) . variable_get('file_public_path', conf_path() . '/files') . '/birt/images/';
+
+      include_once($java_inc_filepath);
+
+      // the report file to render
+      $report_filepath = $here . '/' . variable_get('file_public_path', conf_path() . '/files') . '/birt/files/' . $vars['birt_reportfile'][0]['filename'];
+
+      // load resources, .rpt files and images from the current working dir
+      $ctx = java_context()->getServletContext();
+      $birt_report_engine = java("org.eclipse.birt.php.birtengine.BirtEngine")->getBirtEngine($ctx);
+      java_context()->onShutdown(java("org.eclipse.birt.php.birtengine.BirtEngine")->getShutdownHook());
+
+      // Create a HTML render context
+      $render_context = new java("org.eclipse.birt.report.engine.api.HTMLRenderContext");
+
+ //     $ih = new java("org.eclipse.birt.report.engine.api.HTMLServerImageHandler");
+ //     $render_context->setImageHandler($ih);
+
+      $render_context->setBaseImageURL($report_images_path . session_id());
+      $render_context->setImageDirectory($report_images_path . session_id());
+      $context_map = new java("java.util.HashMap");
+      $context = java("org.eclipse.birt.report.engine.api.EngineConstants")->APPCONTEXT_HTML_RENDER_CONTEXT;
+      $context_map->put($context, $render_context);
 
 
-        // Call the Java.inc file that was uploaded in the BIRT module admin page.
-        $my_java_inc = "private://birt/files/Java.inc";
-        $java_inc_filepath = file_build_uri($myreport);
-        include_once($java_inc_filepath);
+      // Load the report design
+      $design = $birt_report_engine->openReportDesign("${report_filepath}");
+      $task = $birt_report_engine->createRunAndRenderTask($design);
+      $task->setAppContext($context_map);
 
+      // Add HTML render options
+      $options = new java("org.eclipse.birt.report.engine.api.HTMLRenderOption");
+      $options->setOutputFormat($options->OUTPUT_FORMAT_HTML);
 
-        /**
-         * This example demonstrates how to use a complex library such as
-         * Eclipse BIRT. This library starts a number of threads, which must
-         * be terminated before the library is unloaded. This is usually done
-         * in the servlet's destroy() method or in the destroy() method of
-         * an associated ServletContextListener.
-         *
-         * To allow startup and shutdown of such libraries, the PHP/Java
-         * Bridge provides two convenience procedures, which allow one to run
-         * a synchronized init() and to register a close() hook with the
-         * servlet or the VM. Please see the API documentation of
-         * java_context()->init() and java_context()->onShutdown() for
-         * details.
-         *
-         * To use this sample, copy "report.php", "test.rptdesign" (and
-         * "Java.inc", if needed) to some directory, start the Java back- end
-         * (tomcat, or any other J2EE server) and type:
-         *
-         * php report.php >helloBirt.html
-         *
-         */
+      // Create the output
+      $out = new java("java.io.ByteArrayOutputStream");
+      $options->setOutputStream($out);
+      $task->setRenderOption($options);
+      $task->run();
+      $task->close();
 
-        // the report file to render
-        $myReport = "public://birt/files/" . $vars['birt_reportfile'][0]['filename'];
-        $report_filepath = file_build_uri($myreport);
-
-        // load resources, .rpt files and images from the current working dir
-        $here = getcwd();
-
-        $ctx = java_context()->getServletContext();
-        $birtReportEngine =        java("org.eclipse.birt.php.birtengine.BirtEngine")->getBirtEngine($ctx);
-        java_context()->onShutdown(java("org.eclipse.birt.php.birtengine.BirtEngine")->getShutdownHook());
-
-
-        // Create a HTML render context
-        $renderContext = new java ("org.eclipse.birt.report.engine.api.HTMLRenderContext");
-        $renderContext->setBaseImageURL("$here/sites/default/files/birt/files");
-        $contextMap = new java("java.util.HashMap");
-        $CONTEXT = java("org.eclipse.birt.report.engine.api.EngineConstants")->APPCONTEXT_HTML_RENDER_CONTEXT;
-        $contextMap->put($CONTEXT, $renderContext );
-
-
-        // Load the report design
-        $design = $birtReportEngine->openReportDesign("${report_filepath}");
-        $task = $birtReportEngine->createRunAndRenderTask( $design );
-        $task->setAppContext( $contextMap );
-
-        // Add HTML render options
-        $options = new java("org.eclipse.birt.report.engine.api.HTMLRenderOption");
-        $options->setOutputFormat($options->OUTPUT_FORMAT_HTML);
-
-        // Create the output
-        $out = new java("java.io.ByteArrayOutputStream");
-        $options->setOutputStream($out);
-        $task->setRenderOption($options);
-        $task->run();
-        $task->close();
-
-        // Return the generated output to the client
-        $vars['report'] = java_values($out);;
-      }
+      // Return the generated output to the client
+      $report = java_values($out);
     }
 
     // If using an iframe, set up iframe link and size of iframe.
     if ($birt_render_method == 'iframe'){
       $report_url = variable_get('birt_server_address') . '/frameset?__report=' . $external_design;
-      $vars['report_url'] = $report_url;
 
       if (!empty($vars['birt_height'])) {
-        $vars['report_height'] = $vars['birt_height'][0]['value'];
+        $report_height = $vars['birt_height'][0]['value'];
       }
       else {
-        $vars['report_height'] = '800px';
+        $report_height = '800px';
       }
 
       if (!empty($vars['birt_width'])) {
-        $vars['report_width'] = $vars['birt_width'][0]['value'];
+        $report_width = $vars['birt_width'][0]['value'];
       }
       else {
-        $vars['report_width'] = '100%';
+        $report_width = '100%';
       }
     }
+    $vars['report'] = $report;
+    $vars['report_width'] = $report_width;
+    $vars['report_height'] = $report_height;
+    $vars['report_url'] = $report_url;
   }
 }

@@ -111,13 +111,13 @@
     ?>
   </div>
 
-  <?php if ($report): ?>
-  <div class="birt_report">
-    <?php print $report; ?>
-  </div>
+  <?php if ($birt_render_method == 'birt_api'): ?>
+    <div class="birt_report">
+      <?php print $report; ?>
+    </div>
   <?php endif; ?>
 
-  <?php if ($report_url): ?>
+  <?php if ($birt_render_method == 'iframe'): ?>
     <iframe src="http://<?php print $report_url; ?>" width="100%"
     height="<?php print $report_height ?>;">
     <p><?php echo t('Report Should Appear Here'); ?></p>
