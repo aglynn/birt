@@ -32,6 +32,10 @@ function birt_install() {
   // to store the name of the translation function.
   $t = get_t();
 
+  drupal_mkdir("public://birt", NULL, TRUE);
+  drupal_mkdir("public://birt/files", NULL, TRUE);
+  drupal_mkdir("public://birt/images", NULL, TRUE);
+
   // We define the node type as an associative array.
   $birt = array(
     'type' => 'birt',

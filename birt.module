@@ -134,6 +134,7 @@ function birt_preprocess_node(&$vars) {
       $report_images_path = $here . '/' . variable_get('file_public_path', conf_path() . '/files') . '/birt/images/';
       $report_images_external = url('/', array('absolute' => TRUE)) . variable_get('file_public_path', conf_path() . '/files') . '/birt/images/';
 
+      // TODO: Define the java.inc variable here so users don't have to.
       include_once($java_inc_filepath);
 
       // the report file to render
@@ -147,15 +148,11 @@ function birt_preprocess_node(&$vars) {
       // Create a HTML render context
       $render_context = new java("org.eclipse.birt.report.engine.api.HTMLRenderContext");
 
- //     $ih = new java("org.eclipse.birt.report.engine.api.HTMLServerImageHandler");
- //     $render_context->setImageHandler($ih);
-
       $render_context->setBaseImageURL($report_images_path . session_id());
       $render_context->setImageDirectory($report_images_path . session_id());
       $context_map = new java("java.util.HashMap");
       $context = java("org.eclipse.birt.report.engine.api.EngineConstants")->APPCONTEXT_HTML_RENDER_CONTEXT;
       $context_map->put($context, $render_context);
-
 
       // Load the report design
       $design = $birt_report_engine->openReportDesign("${report_filepath}");
@@ -176,7 +173,7 @@ function birt_preprocess_node(&$vars) {
       // Return the generated output to the client
       $report_html = java_values($out);
 
-      // Fix the broken images. Escape the text for the public path and absolute path
+      // Fix the broken images.
       $report = str_replace('file:' . $here, '', $report_html);
     }
 
