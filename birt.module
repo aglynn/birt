@@ -29,7 +29,7 @@ function birt_admin() {
     '#size' => 30,
     '#maxlength' => 100,
     '#description' => t('Please type the URL of your JavaBridge directory. For example, for http://127.0.0.1:8080/JavaBridge/ type in 127.0.0.1:8080/JavaBridge'),
-    '#required' => FALSE,
+    '#required' => TRUE,
     '#states' => array(
       // Only show this field when the checkbox is enabled.
       'visible' => array(
@@ -39,36 +39,44 @@ function birt_admin() {
   );
 
   $form['birt_javabridge_settings_file'] = array(
-    '#states' => array(
-      // Only show this field when the checkbox is enabled.
-      'visible' => array(
-        ':input[name="birt_render_method"]' => array('value' => 'birt_api'),
-      ),
-    ),
-    '#title' => t('JavaBridge Settings File'),
-    '#description' => t('Please upload the Java.inc file located within the JavaBridge/java/ directory. If your file starts out like the following, then that is correct:') . <<<'TXT'
-<?php
-# Java.inc -- The PHP/Java Bridge PHP library. Compiled from JavaBridge.inc.
-# Copyright (C) 2003-2009 Jost Boekemeier.
-# Distributed under the MIT license, see Options.inc for details.
-# Customization examples:
-# define ("JAVA_HOSTS", 9267); define ("JAVA_SERVLET", false);
-# define ("JAVA_HOSTS", "127.0.0.1:8787");
-# define ("JAVA_HOSTS", "ssl://my-secure-host.com:8443");
-# define ("JAVA_SERVLET", "/MyWebApp/servlet.phpjavabridge");
-# define ("JAVA_PREFER_VALUES", 1);
-
-if(!function_exists("java_get_base")) {
-......
-TXT
-      ,
+    '#title' => t('JavaBridge Settings File - You Only Need to Upload This One Time'),
+    '#description' => t('Please upload the Java.inc file located within the JavaBridge/java/ directory.
+        For local development, this file often at such as http://127.0.0.1:8080/JavaBridge/java/Java.inc.
+        Make sure that none of the constants before the first function are uncommented.
+        In other words, be sure they have # at the beginning of the line).
+        I will use the BIRT server address, which you specified at the top of this page, minus the /birt/ as the Java address.'),
     '#type' => 'file',
     '#default_value' => variable_get('birt_javabridge_settings_file', ''),
   );
 
+  $form['#validate'][] = '_birt_admin_validate';
   $form['#submit'][] = '_birt_admin_settings_submit';
 
   return system_settings_form($form);
+}
+
+function _birt_admin_validate($form, &$form_state) {
+  $file = file_save_upload('birt_javabridge_settings_file', array(
+      'file_validate_extensions' => array('inc'), // Validate extensions.
+  ));
+  // If the file passed validation:
+  if ($file) {
+    $birt_dir = 'private://birt';
+    // Check if the private://birt directory exists. Create it if it doesn't.
+    file_prepare_directory($birt_dir, FILE_CREATE_DIRECTORY);
+
+    // Move the file, into the Drupal file system
+    if ($file = file_move($file, 'private://birt/', FILE_EXISTS_REPLACE)) {
+      // Save the file for use in the submit handler.
+      $form_state['storage']['file'] = $file;
+    }
+    else {
+      form_set_error('file', t('Failed to write the uploaded file the site\'s file folder.'));
+    }
+  }
+  else {
+    form_set_error('file', t('No file was uploaded.'));
+  }
 }
 
 /**
@@ -81,14 +89,19 @@ function _birt_admin_settings_submit($form, &$form_state) {
     variable_set('birt_java_location', substr(variable_get('birt_server_address'), 0, -5));
   }
 
-  $java_inc_filepath = $here . '/' . variable_get('file_private_path', conf_path() . '/files') . '/Java.inc';
+  $here = getcwd();
+  $java_inc_filepath = $here . '/' . variable_get('file_private_path', conf_path() . '/files') . '/birt/Java.inc';
   if(!file_exists($java_inc_filepath)){
-    echo "Warning: The Java.inc file can't be found, which will prevent BIRT reports from working in Drupal.";
+    drupal_set_message(t("Warning: The Java.inc file can't be found, which will prevent BIRT reports from working in Drupal.
+        You probably haven't set up your private files directory. You can do so at /admin/config/media/file-system."), 'error');
     return;
   }
+
   $file_contents = file_get_contents($java_inc_filepath);
   $file_contents = str_replace('# define ("JAVA_HOSTS", "127.0.0.1:8787");','define ("JAVA_HOSTS", variable_get("birt_java_location"));',$file_contents);
-  file_put_contents($path_to_file,$file_contents);
+//  $file_contents = str_replace('#','',$file_contents);
+
+  file_put_contents($java_inc_filepath,$file_contents);
 }
 
 /**
@@ -147,7 +160,7 @@ function birt_preprocess_node(&$vars) {
     $here = getcwd();
 
     // Call the Java.inc file that was uploaded in the BIRT module admin page.
-    $java_inc_filepath = $here . '/' . variable_get('file_private_path', conf_path() . '/files') . '/Java.inc';
+    $java_inc_filepath = $here . '/' . variable_get('file_private_path', conf_path() . '/files') . '/birt/Java.inc';
 
     $report_images_path = $here . '/' . variable_get('file_public_path', conf_path() . '/files') . '/birt/images/';
 
