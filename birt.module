@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Our BIRT Open Source node type will allow users to specify a "reportname"
+ * Our BIRT node type will allow users to specify a "reportname"
  */
 
 
@@ -11,18 +11,6 @@
  */
 function birt_admin() {
   $form = array();
-
-  $form['birt_render_method'] = array(
-    '#type' => 'radios',
-    '#options' => array(
-      'birt_api' => t('BIRT API'),
-      'iframe' => t('iFrame'),
-    ),
-    '#title' => 'BIRT Report Render Method: iFrame vs API',
-    '#description' => t('Indicate whether you want your BIRT report to render using an iFrame or using the BIRT API.'),
-    '#required' => TRUE,
-    '#default_value' => variable_get('birt_render_method', ''),
-  );
 
   $form['birt_server_address'] = array(
     '#type' => 'textfield',
@@ -58,12 +46,49 @@ function birt_admin() {
       ),
     ),
     '#title' => t('JavaBridge Settings File'),
-    '#description' => t('Please upload the Java.inc file located within the JavaBridge/java/ directory.'),
+    '#description' => t('Please upload the Java.inc file located within the JavaBridge/java/ directory. If your file starts out like the following, then that is correct:') . <<<'TXT'
+<?php
+# Java.inc -- The PHP/Java Bridge PHP library. Compiled from JavaBridge.inc.
+# Copyright (C) 2003-2009 Jost Boekemeier.
+# Distributed under the MIT license, see Options.inc for details.
+# Customization examples:
+# define ("JAVA_HOSTS", 9267); define ("JAVA_SERVLET", false);
+# define ("JAVA_HOSTS", "127.0.0.1:8787");
+# define ("JAVA_HOSTS", "ssl://my-secure-host.com:8443");
+# define ("JAVA_SERVLET", "/MyWebApp/servlet.phpjavabridge");
+# define ("JAVA_PREFER_VALUES", 1);
+
+if(!function_exists("java_get_base")) {
+......
+TXT
+      ,
     '#type' => 'file',
     '#default_value' => variable_get('birt_javabridge_settings_file', ''),
   );
 
+  $form['#submit'][] = '_birt_admin_settings_submit';
+
   return system_settings_form($form);
+}
+
+/**
+ * Edits the Java.inc file, which converts PHP commands to Java and which needs the path to Java.
+ * Here we will have that file pull the path set in the BIRT configuration page.
+ */
+function _birt_admin_settings_submit($form, &$form_state) {
+  $birt_java_location = variable_get('birt_java_location');
+  if ($birt_java_location == NULL) {
+    variable_set('birt_java_location', substr(variable_get('birt_server_address'), 0, -5));
+  }
+
+  $java_inc_filepath = $here . '/' . variable_get('file_private_path', conf_path() . '/files') . '/Java.inc';
+  if(!file_exists($java_inc_filepath)){
+    echo "Warning: The Java.inc file can't be found, which will prevent BIRT reports from working in Drupal.";
+    return;
+  }
+  $file_contents = file_get_contents($java_inc_filepath);
+  $file_contents = str_replace('# define ("JAVA_HOSTS", "127.0.0.1:8787");','define ("JAVA_HOSTS", variable_get("birt_java_location"));',$file_contents);
+  file_put_contents($path_to_file,$file_contents);
 }
 
 /**
@@ -116,88 +141,60 @@ function birt_preprocess_node(&$vars) {
 
     $report_url = '';
     $report = '';
-    $report_width = '';
-    $report_height = '';
 
-    $external_design = substr(url('/', array('absolute' => TRUE)), 0, -1) . variable_get('file_public_path', conf_path() . '/files') . '/birt/files/' . $vars['birt_reportfile'][0]['filename'];
-    $birt_render_method = variable_get('birt_render_method');
-    $vars['birt_render_method'] = $birt_render_method;
+    drupal_add_css(drupal_get_path('module', 'birt') . '/theme/birt.css');
 
-    if ($birt_render_method == 'birt_api'){
-      drupal_add_css(drupal_get_path('module', 'birt') . '/theme/birt.css');
+    $here = getcwd();
 
-      $here = getcwd();
+    // Call the Java.inc file that was uploaded in the BIRT module admin page.
+    $java_inc_filepath = $here . '/' . variable_get('file_private_path', conf_path() . '/files') . '/Java.inc';
 
-      // Call the Java.inc file that was uploaded in the BIRT module admin page.
-      $java_inc_filepath = $here . '/' . variable_get('file_private_path', conf_path() . '/files') . '/Java.inc';
+    $report_images_path = $here . '/' . variable_get('file_public_path', conf_path() . '/files') . '/birt/images/';
 
-      $report_images_path = $here . '/' . variable_get('file_public_path', conf_path() . '/files') . '/birt/images/';
-      $report_images_external = url('/', array('absolute' => TRUE)) . variable_get('file_public_path', conf_path() . '/files') . '/birt/images/';
+    // TODO: Define the java.inc variable here so users don't have to.
+    include_once($java_inc_filepath);
 
-      // TODO: Define the java.inc variable here so users don't have to.
-      include_once($java_inc_filepath);
+    // the report file to render
+    $report_filepath = $here . '/' . variable_get('file_public_path', conf_path() . '/files') . '/birt/files/' . $vars['birt_reportfile'][0]['filename'];
 
-      // the report file to render
-      $report_filepath = $here . '/' . variable_get('file_public_path', conf_path() . '/files') . '/birt/files/' . $vars['birt_reportfile'][0]['filename'];
+    // load resources, .rpt files and images from the current working dir
+    $ctx = java_context()->getServletContext();
+    $birt_report_engine = java("org.eclipse.birt.php.birtengine.BirtEngine")->getBirtEngine($ctx);
+    java_context()->onShutdown(java("org.eclipse.birt.php.birtengine.BirtEngine")->getShutdownHook());
 
-      // load resources, .rpt files and images from the current working dir
-      $ctx = java_context()->getServletContext();
-      $birt_report_engine = java("org.eclipse.birt.php.birtengine.BirtEngine")->getBirtEngine($ctx);
-      java_context()->onShutdown(java("org.eclipse.birt.php.birtengine.BirtEngine")->getShutdownHook());
+    // Create a HTML render context
+    $render_context = new java("org.eclipse.birt.report.engine.api.HTMLRenderContext");
 
-      // Create a HTML render context
-      $render_context = new java("org.eclipse.birt.report.engine.api.HTMLRenderContext");
+    $render_context->setBaseImageURL($report_images_path . session_id());
+    $render_context->setImageDirectory($report_images_path . session_id());
+    $context_map = new java("java.util.HashMap");
+    $context = java("org.eclipse.birt.report.engine.api.EngineConstants")->APPCONTEXT_HTML_RENDER_CONTEXT;
+    $context_map->put($context, $render_context);
 
-      $render_context->setBaseImageURL($report_images_path . session_id());
-      $render_context->setImageDirectory($report_images_path . session_id());
-      $context_map = new java("java.util.HashMap");
-      $context = java("org.eclipse.birt.report.engine.api.EngineConstants")->APPCONTEXT_HTML_RENDER_CONTEXT;
-      $context_map->put($context, $render_context);
+    // Load the report design
+    $design = $birt_report_engine->openReportDesign("${report_filepath}");
+    $task = $birt_report_engine->createRunAndRenderTask($design);
+    $task->setAppContext($context_map);
 
-      // Load the report design
-      $design = $birt_report_engine->openReportDesign("${report_filepath}");
-      $task = $birt_report_engine->createRunAndRenderTask($design);
-      $task->setAppContext($context_map);
+    // Add HTML render options
+    $options = new java("org.eclipse.birt.report.engine.api.HTMLRenderOption");
+    $options->setOutputFormat($options->OUTPUT_FORMAT_HTML);
 
-      // Add HTML render options
-      $options = new java("org.eclipse.birt.report.engine.api.HTMLRenderOption");
-      $options->setOutputFormat($options->OUTPUT_FORMAT_HTML);
+    // Create the output
+    $out = new java("java.io.ByteArrayOutputStream");
+    $options->setOutputStream($out);
+    $task->setRenderOption($options);
+    $task->run();
+    $task->close();
 
-      // Create the output
-      $out = new java("java.io.ByteArrayOutputStream");
-      $options->setOutputStream($out);
-      $task->setRenderOption($options);
-      $task->run();
-      $task->close();
+    // Return the generated output to the client
+    $report_html = java_values($out);
 
-      // Return the generated output to the client
-      $report_html = java_values($out);
+    // Fix the broken images.
+    $report = str_replace('file:' . $here, '', $report_html);
 
-      // Fix the broken images.
-      $report = str_replace('file:' . $here, '', $report_html);
-    }
+    // TODO: Add cron function to clean out images.
 
-    // If using an iframe, set up iframe link and size of iframe.
-    if ($birt_render_method == 'iframe'){
-      $report_url = variable_get('birt_server_address') . '/frameset?__report=' . $external_design;
-
-      if (!empty($vars['birt_height'])) {
-        $report_height = $vars['birt_height'][0]['value'];
-      }
-      else {
-        $report_height = '800px';
-      }
-
-      if (!empty($vars['birt_width'])) {
-        $report_width = $vars['birt_width'][0]['value'];
-      }
-      else {
-        $report_width = '100%';
-      }
-    }
     $vars['report'] = $report;
-    $vars['report_width'] = $report_width;
-    $vars['report_height'] = $report_height;
-    $vars['report_url'] = $report_url;
   }
 }

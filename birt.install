@@ -4,28 +4,11 @@
  * @file
  * Install file for BIRT module.
  *
- * Creates the BIRT content types
+ * Creates the BIRT content type
  */
 
 /**
  * Implements hook_install().
- *
- * This hook is called when the user enables the module for the first time
- * (or on subsequent enables after the module has been uninstalled). So it's
- * a good place to define our new node type.
- *
- * We will:
- * - Add the body field.
- * - Configure the body field.
- * - Create color, quantity, and image fields.
- * - Create color, quantity, and image instances.
- *
- * @see node_type_set_defaults()
- * @see field_info_instance()
- * @see field_update_instance()
- * @see field_create_field()
- * @see field_create_instance()
- * @ingroup birt
  */
 function birt_install() {
   // During installation, the t() function is unavailable, so we use get_t()
@@ -84,56 +67,6 @@ function birt_install() {
     $instance['bundle'] = $birt['type'];
     field_create_instance($instance);
   }
-
-  $taxonomy_loaded = taxonomy_vocabulary_machine_name_load('report_type');
-  // Ensure the vocabulary doesn't exist already.
-  if ($taxonomy_loaded == NULL) {
-
-    // Create the vocabulary.
-    taxonomy_vocabulary_save((object) array(
-        'name' => 'BI Report Types',
-        'machine_name' => 'report_type',
-    ));
-
-    // Get the vocabulary ID.
-    $vid = $taxonomy_loaded->vid;
-
-    // Define the terms.
-    $terms['Financial'][] = 'Balance Sheets';
-    $terms['Financial'][] = 'Expenditures';
-    $terms['Financial'][] = 'Sales';
-    $terms['Benchmarks'][] = 'Program Management';
-    $terms['Benchmarks'][] = 'Resource Management';
-
-    foreach ($terms as $parent => $children) {
-
-      // Create the parent term.
-      taxonomy_term_save((object) array(
-          'name' => $parent,
-          'vid' => $vid,
-          )
-      );
-
-      // Get all the term ids.
-      $tid = taxonomy_get_tree($vid);
-      $tids = array();
-      foreach ($tid as $tax_object) {
-        $tids[] = get_class($tax_object);
-      }
-
-      // Get the highest term id, because that is the parent.
-      $tid = max($tids);
-
-      foreach ($children as $term) {
-        // Create the child term.
-        taxonomy_term_save((object) array(
-            'name' => $term,
-            'vid' => $vid,
-            'parent' => array($tid),
-        ));
-      }
-    }
-  }
 }
 /**
  * Implements hook_uninstall().
@@ -184,10 +117,6 @@ function birt_uninstall() {
   // http://api.drupal.org/api/function/field_purge_batch/7
   field_purge_batch(1000);
 
-  if (variable_get('birt_render_method')) {
-    variable_del('birt_render_method');
-  }
-
   if (variable_get('birt_server_address')) {
     variable_del('birt_server_address');
   }
@@ -212,42 +141,12 @@ function birt_uninstall() {
 function _birt_installed_fields() {
   $t = get_t();
   return array(
-    'birt_width' => array(
-      'field_name' => 'birt_width',
-      'cardinality' => 1,
-      'type'        => 'text',
-      'settings'    => array(
-        'max_length' => 10,
-      ),
-    ),
-    'birt_height' => array(
-      'field_name'  => 'birt_height',
-      'cardinality' => 1,
-      'type'        => 'text',
-      'settings'    => array(
-        'max_length' => 10,
-      ),
-    ),
     'birt_reportfile' => array(
       'field_name' => 'birt_reportfile',
       'type'       => 'file',
       'cardinality' => 1,
       'settings' => array(
         'uri_scheme' => 'public',
-      ),
-    ),
-    'birt_tag' => array(
-      'field_name' => 'birt_tag',
-      'label' => $t('BI Report Tag'),
-      'type' => 'taxonomy_term_reference',
-      'cardinality' => 1,
-      'settings' => array(
-        'allowed_values' => array(
-          array(
-            'vocabulary' => 'report_type',
-            'parent' => 0,
-          ),
-        ),
       ),
     ),
   );
@@ -275,21 +174,6 @@ function _birt_installed_fields() {
 function _birt_installed_instances() {
   $t = get_t();
   return array(
-    'birt_width' => array(
-      'field_name' => 'birt_width',
-      'label'      => $t('The width of the BI report frame.'),
-      'widget'     => array(
-        'type'    => 'text_textfield',
-      ),
-    ),
-    'birt_height' => array(
-      'field_name'  => 'birt_height',
-      'label' => $t('The height of the BI report frame.'),
-      'type'        => 'text',
-      'widget'      => array(
-        'type'    => 'text_textfield',
-      ),
-    ),
     'birt_reportfile' => array(
       'field_name' => 'birt_reportfile',
       'type' => 'file',
@@ -300,14 +184,6 @@ function _birt_installed_instances() {
         'file_extensions' => 'rptdesign',
         'max_filesize' => '50MB',
         'user_register_form' => FALSE,
-      ),
-    ),
-    'birt_tag' => array(
-      'field_name' => 'birt_tag',
-      'label' => $t('BI Report Tag'),
-      'type' => 'taxonomy_term_reference',
-      'widget' => array(
-        'type' => 'taxonomy_autocomplete',
       ),
     ),
   );
