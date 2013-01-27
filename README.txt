@@ -12,4 +12,4 @@ You must have your site's private file directory setup.
 
 The private directory is at /admin/config/media/file-system. 
 
-To get started, just go to /admin/config/birt and enter the Tomcat BIRT server.
+To get started, just go to /admin/config/birt and type the Tomcat BIRT server.
