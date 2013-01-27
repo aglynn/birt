@@ -152,62 +152,69 @@ function birt_preprocess_node(&$vars) {
 
   if ($vars['type'] == 'birt' && $vars['page'] == TRUE) {
 
-    $report_url = '';
-    $report = '';
+    if (empty($vars['birt_reportfile'])) {
+      // TODO: Replace the following with a log/admin message rather than normal message.
+      drupal_set_message(t("There is no report file provided for this report."), 'error');
+    }
 
-    drupal_add_css(drupal_get_path('module', 'birt') . '/theme/birt.css');
+    else {
 
-    $here = getcwd();
+      $report_url = '';
+      $report = '';
 
-    // Call the Java.inc file that was uploaded in the BIRT module admin page.
-    $java_inc_filepath = $here . '/' . variable_get('file_private_path', conf_path() . '/files') . '/birt/Java.inc';
+      drupal_add_css(drupal_get_path('module', 'birt') . '/theme/birt.css');
 
-    $report_images_path = $here . '/' . variable_get('file_public_path', conf_path() . '/files') . '/birt/images/';
+      $here = getcwd();
 
-    // TODO: Define the java.inc variable here so users don't have to.
-    include_once($java_inc_filepath);
+      // Call the Java.inc file that was uploaded in the BIRT module admin page.
+      $java_inc_filepath = $here . '/' . variable_get('file_private_path', conf_path() . '/files') . '/birt/Java.inc';
 
-    // the report file to render
-    $report_filepath = $here . '/' . variable_get('file_public_path', conf_path() . '/files') . '/birt/files/' . $vars['birt_reportfile'][0]['filename'];
+      $report_images_path = $here . '/' . variable_get('file_public_path', conf_path() . '/files') . '/birt/images/';
 
-    // load resources, .rpt files and images from the current working dir
-    $ctx = java_context()->getServletContext();
-    $birt_report_engine = java("org.eclipse.birt.php.birtengine.BirtEngine")->getBirtEngine($ctx);
-    java_context()->onShutdown(java("org.eclipse.birt.php.birtengine.BirtEngine")->getShutdownHook());
+      include_once($java_inc_filepath);
 
-    // Create a HTML render context
-    $render_context = new java("org.eclipse.birt.report.engine.api.HTMLRenderContext");
+      // the report file to render
+      $report_filepath = $here . '/' . variable_get('file_public_path', conf_path() . '/files') . '/birt/files/' . $vars['birt_reportfile'][0]['filename'];
 
-    $render_context->setBaseImageURL($report_images_path . session_id());
-    $render_context->setImageDirectory($report_images_path . session_id());
-    $context_map = new java("java.util.HashMap");
-    $context = java("org.eclipse.birt.report.engine.api.EngineConstants")->APPCONTEXT_HTML_RENDER_CONTEXT;
-    $context_map->put($context, $render_context);
+      // load resources, .rpt files and images from the current working dir
+      $ctx = java_context()->getServletContext();
+      $birt_report_engine = java("org.eclipse.birt.php.birtengine.BirtEngine")->getBirtEngine($ctx);
+      java_context()->onShutdown(java("org.eclipse.birt.php.birtengine.BirtEngine")->getShutdownHook());
 
-    // Load the report design
-    $design = $birt_report_engine->openReportDesign("${report_filepath}");
-    $task = $birt_report_engine->createRunAndRenderTask($design);
-    $task->setAppContext($context_map);
+      // Create a HTML render context
+      $render_context = new java("org.eclipse.birt.report.engine.api.HTMLRenderContext");
 
-    // Add HTML render options
-    $options = new java("org.eclipse.birt.report.engine.api.HTMLRenderOption");
-    $options->setOutputFormat($options->OUTPUT_FORMAT_HTML);
+      $render_context->setBaseImageURL($report_images_path . session_id());
+      $render_context->setImageDirectory($report_images_path . session_id());
+      $context_map = new java("java.util.HashMap");
+      $context = java("org.eclipse.birt.report.engine.api.EngineConstants")->APPCONTEXT_HTML_RENDER_CONTEXT;
+      $context_map->put($context, $render_context);
 
-    // Create the output
-    $out = new java("java.io.ByteArrayOutputStream");
-    $options->setOutputStream($out);
-    $task->setRenderOption($options);
-    $task->run();
-    $task->close();
+      // Load the report design
+      $design = $birt_report_engine->openReportDesign("${report_filepath}");
+      $task = $birt_report_engine->createRunAndRenderTask($design);
+      $task->setAppContext($context_map);
 
-    // Return the generated output to the client
-    $report_html = java_values($out);
+      // Add HTML render options
+      $options = new java("org.eclipse.birt.report.engine.api.HTMLRenderOption");
+      $options->setOutputFormat($options->OUTPUT_FORMAT_HTML);
 
-    // Fix the broken images.
-    $report = str_replace('file:' . $here, '', $report_html);
+      // Create the output
+      $out = new java("java.io.ByteArrayOutputStream");
+      $options->setOutputStream($out);
+      $task->setRenderOption($options);
+      $task->run();
+      $task->close();
 
-    // TODO: Add cron function to clean out images.
+      // Return the generated output to the client
+      $report_html = java_values($out);
 
-    $vars['report'] = $report;
+      // Fix the broken images.
+      $report = str_replace('file:' . $here, '', $report_html);
+
+      // TODO: Add cron function to clean out images.
+
+      $vars['report'] = $report;
+    }
   }
 }

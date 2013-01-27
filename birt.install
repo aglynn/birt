@@ -121,9 +121,20 @@ function birt_uninstall() {
     variable_del('birt_server_address');
   }
 
-  if (variable_get('javabridge_directory_address')) {
+  if (variable_get('birt_javabridge_directory_address')) {
     variable_del('javabridge_directory_address');
   }
+
+  if (variable_get('birt_java_location')) {
+    variable_del('birt_java_location');
+  }
+
+  variable_del('birt_javabridge_settings_file');
+
+  drupal_rmdir("public://birt");
+  drupal_rmdir("public://birt/files");
+  drupal_rmdir("public://birt/images");
+
 }
 
 /**
@@ -155,12 +166,6 @@ function _birt_installed_fields() {
 
 /**
  * Returns a structured array defining the instances for this content type.
- *
- * The instance lets Drupal know which widget to use to allow the user to enter
- * data and how to react in different view modes.  We are going to display a
- * page that uses a custom "birt_list" view mode.  We will set a
- * cardinality of three allowing our content type to give the user three color
- * fields.
  *
  * This is factored into this function so it can be used in both
  * birt_install() and birt_uninstall().

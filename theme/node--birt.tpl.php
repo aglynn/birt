@@ -31,14 +31,15 @@
     // We hide the comments and links now so that we can render them later.
     hide($content['comments']);
     hide($content['links']);
-    unset($content['birt_reportfile']);
     print render($content);
     ?>
   </div>
 
+  <?php if (!empty($content['birt_reportfile'])): ?>
   <div class="birt_report">
     <?php print $report; ?>
   </div>
+  <?php endif; ?>
 
   <?php print render($content['links']); ?>
 
